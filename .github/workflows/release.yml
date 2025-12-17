@@ -21,8 +21,5 @@ jobs:
       - name: Setup Flutter
         uses: bancolombia/flutter-setup-action@v1
 
-      - name: Install dependencies
-        run: flutter pub get
-
       - name: build
-        run: ./build.sh
+        run: ./build.sh -k -a
