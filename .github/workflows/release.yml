@@ -1,8 +1,3 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
 name: Release
 
 on:
@@ -20,6 +15,11 @@ jobs:
 
       - name: Setup Flutter
         uses: bancolombia/flutter-setup-action@v1
+        with:
+          #channel: 'stable'
+          #flutter-version: '3.32.0'
+          #java-version: '17'
+          cache: 'true'
 
       - name: Install gradle
         run: |
