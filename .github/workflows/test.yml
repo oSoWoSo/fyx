@@ -1,0 +1,81 @@
+name: Build and Release APK
+
+on:
+  push:
+    branches: [ "develop" ]
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+      
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+      
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: 'stable'
+          cache: true
+      
+      - name: Get Flutter dependencies
+        run: flutter pub get
+      
+      - name: Create .env file
+        run: |
+          touch .env
+          echo "SENTRY_DSN=${{ secrets.SENTRY_DSN }}" >> .env
+        # Add other environment variables as needed
+      
+      - name: Build APK
+        run: flutter build apk --release
+      
+      - name: Get version from tag
+        id: get_version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "VERSION=${TAG}" >> $GITHUB_OUTPUT
+          echo "VERSION_NAME=${TAG%%+*}" >> $GITHUB_OUTPUT
+      
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref_name }}
+          release_name: Fyx ${{ steps.get_version.outputs.VERSION_NAME }}
+          draft: false
+          prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') }}
+          body: |
+            ## 📱 Download
+            
+            **Android APK** is available below as an asset.
+            
+            ### Installation
+            1. Download `fyx-release.apk`
+            2. Enable installation from unknown sources in Android settings
+            3. Install the APK
+            
+            ### Changelog
+            See detailed changelog in [CHANGELOG.md](https://github.com/lucien144/fyx/blob/develop/CHANGELOG.md)
+      
+      - name: Upload APK to Release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: build/app/outputs/flutter-apk/app-release.apk
+          asset_name: fyx-release.apk
+          asset_content_type: application/vnd.android.package-archive
